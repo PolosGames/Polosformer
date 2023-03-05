@@ -1,0 +1,4 @@
+[submodule "Polos"]
+	path = Polos
+	url = https://github.com/PolosGames/Polos
+	branch = project
