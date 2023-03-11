@@ -14,6 +14,6 @@ namespace polosformer
         EntryPoint();
         virtual ~EntryPoint();
     private:
-        std::unique_ptr<Game> game;
+        std::unique_ptr<Game> m_Game;
     };
 } // namespace polosformer

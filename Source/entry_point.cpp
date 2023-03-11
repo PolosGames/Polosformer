@@ -10,7 +10,7 @@ namespace polosformer
     EntryPoint::EntryPoint()
     {
         polos::ShaderLib::Load("resources/shaders/texture.vert", "resources/shaders/texture.frag");
-        game = std::make_unique<Game>();
+        m_Game = std::make_unique<Game>();
     }
 
     EntryPoint::~EntryPoint()

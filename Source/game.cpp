@@ -1,6 +1,8 @@
 
 #include "game.h"
 
+#include <format>
+
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
@@ -9,49 +11,51 @@
 #include <polos/graphics/shader_lib.h>
 #include <polos/graphics/renderer.h>
 #include <polos/core/event_bus.h>
-
-#include "entry_point.h"
-
+#include <polos/core/scene/scene_view.h>
+#include <polos/core/ecs/components/components.h>
 
 namespace polosformer
 {
+    game_state Game::m_GameState;
+
     Game::Game()
         : m_SceneCamera{{0.0f, 0.0f, 5.0f}, {0.0f, 1.0f, 0.0f}}
     {
         UPDATE_Q_MEM_ADD_LAST(Update);
         SUB_TO_EVENT_MEM_FUN(polos::key_press, OnKeyPress);
         SUB_TO_EVENT_MEM_FUN(polos::key_release, OnKeyRelease);
-        
+
+        LoadSprites();
+
+        m_GameState.currentScene = &m_MainScene;
+        m_GameState.playState    = PlayState::k_LevelStart;
+
         m_Character = m_MainScene.NewEntity();
-
-        namespace ecs = polos::ecs;
-
-        auto* character_transform_comp = m_MainScene.Assign<ecs::transform_component>(m_Character);
-        auto* character_texture2d_comp = m_MainScene.Assign<ecs::texture2d_component>(m_Character);
-        auto* character_material_comp  = m_MainScene.Assign<ecs::material_component>(m_Character);
 
         constexpr float anim_sprite_width{50};
         constexpr float anim_sprite_height{37};
-        constexpr float sprite_sheet_width{350};
-        constexpr float sprite_sheet_height{592};
 
         constexpr float character_scale_ratio{ anim_sprite_width / anim_sprite_height };
-        constexpr float row_count{ sprite_sheet_width / anim_sprite_width };
-        constexpr float column_count{ sprite_sheet_height / anim_sprite_height };
 
-        constexpr int32_t row{1};
-        constexpr int32_t column{2};
+        namespace ecs = polos::ecs;
 
+        auto* character_info_comp = m_MainScene.Assign<ecs::info_component>(m_Character);
+        std::string name("Character");
+        std::ranges::copy(name, character_info_comp->name);
+        character_info_comp->isVisible = true;
+
+        auto* character_transform_comp = m_MainScene.Assign<ecs::transform_component>(m_Character);
         character_transform_comp->scale = glm::vec3(character_scale_ratio, 1.0f, 1.0f);
+        
+        auto* character_texture2d_comp = m_MainScene.Assign<ecs::texture2d_component>(m_Character);
+        character_texture2d_comp->texture = m_CharacterAnimIdle_1->frames[0];
 
-        character_texture2d_comp->texture       = polos::Texture::Load("resources/textures/adventurer-v1.5-Sheet.png");
-        character_texture2d_comp->uvBottomLeft  = glm::vec2((row * anim_sprite_width) / sprite_sheet_width, ((column_count - column) * anim_sprite_height) / sprite_sheet_height);
-        character_texture2d_comp->uvBottomRight = glm::vec2(((row + 1) * anim_sprite_width) / sprite_sheet_width, ((column_count - column) * anim_sprite_height) / sprite_sheet_height);
-        character_texture2d_comp->uvTopRight    = glm::vec2(((row + 1) * anim_sprite_width) / sprite_sheet_width, ((column_count - column + 1) * anim_sprite_height) / sprite_sheet_height);
-        character_texture2d_comp->uvTopLeft     = glm::vec2(((row) * anim_sprite_width) / sprite_sheet_width, ((column_count - column + 1) * anim_sprite_height) / sprite_sheet_height);
-        character_texture2d_comp->hasUvChanged  = true;
-
+        auto* character_material_comp  = m_MainScene.Assign<ecs::material_component>(m_Character);
         character_material_comp->shader = &polos::ShaderLib::Get("texture"_sid);
+        
+        auto* character_animation_comp = m_MainScene.Assign<ecs::animator_component>(m_Character);
+        character_animation_comp->fps = 20;
+        character_animation_comp->currentAnimation = m_CharacterAnimIdle_1.get();
     }
 
     Game::~Game()
@@ -61,7 +65,24 @@ namespace polosformer
     {
         UpdateCamera(p_DeltaTime);
 
+        auto scene_view = polos::SceneView<polos::ecs::animator_component, polos::ecs::texture2d_component>(m_MainScene);
+        for (auto entity : scene_view)
+        {
+            auto* animator_comp = m_MainScene.Get<polos::ecs::animator_component>(entity);
+            auto* texture2d_comp = m_MainScene.Get<polos::ecs::texture2d_component>(entity);
+            //auto* info_comp = m_MainScene.Get<polos::ecs::info_component>(entity);
+
+            texture2d_comp->texture = animator_comp->currentAnimation->frames[animator_comp->currentFrame];
+
+            int a = 3; a = 4;
+        }
+
         polos::Renderer::RenderScene(m_MainScene);
+    }
+
+    game_state& Game::GetCurrentGameState()
+    {
+        return m_GameState;
     }
 
     void Game::UpdateCamera(float p_DeltaTime)
@@ -133,5 +154,17 @@ namespace polosformer
         }
 
         m_Key &= ~current_key;
+    }
+
+    void Game::LoadSprites()
+    {
+        m_CharacterAnimIdle_1 = std::unique_ptr<polos::animation<4>>(new polos::animation<4>);
+
+        for (std::size_t i{}; i < m_CharacterAnimIdle_1->frames.capacity(); i++)
+        {
+            m_CharacterAnimIdle_1->frames.push_back(
+                polos::Texture::Load(std::format("resources/textures/character/adventurer-idle-0{}.png", i))
+            );
+        }
     }
 } // namespace polosformer
