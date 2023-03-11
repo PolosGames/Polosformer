@@ -3,15 +3,8 @@
 # Add source to this project's executable.
 add_executable(Polosformer)
 
-set(
-    Polosformer_SOURCES
-        "entry_point.cpp"
- "game.cpp")
-
-set(
-    Polosformer_HEADERS
-        "entry_point.h"
- "game.h")
+file(GLOB_RECURSE Polosformer_SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
+file(GLOB_RECURSE Polosformer_HEADERS "${CMAKE_CURRENT_LIST_DIR}/*.h")
 
 target_sources(
     Polosformer
@@ -20,16 +13,14 @@ target_sources(
             ${Polosformer_HEADERS}
 )
 
-target_include_directories(
-    Polosformer
-        PRIVATE
-            "Source"
-)
-
 target_link_libraries(
     Polosformer
-        PUBLIC
+        PRIVATE
             Runtime
+            PolosThirdParty
+            glm::glm_interface
+            glad::glad_interface
+            glfw::glfw_interface
 )
 
 target_compile_features(
@@ -40,8 +31,10 @@ target_compile_features(
 
 target_precompile_headers(
     Polosformer
-        PRIVATE
-            "pch.h"
+        REUSE_FROM
+            RuntimePCH
 )
 
 install(TARGETS Polosformer DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+build_options(Polosformer true)
