@@ -9,10 +9,8 @@
             "installDir": "${sourceDir}/bin/${presetName}",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "cl.exe",
-                "CMAKE_CXX_COMPILER": "cl.exe"
-            },
-            "environment": {
-                "EXPORT_ENGINE": "1"
+                "CMAKE_CXX_COMPILER": "cl.exe",
+                "EXPORT_ENGINE": true
             },
             "condition": {
                 "type": "equals",

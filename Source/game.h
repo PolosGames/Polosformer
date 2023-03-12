@@ -11,6 +11,7 @@
 
 #include "game_state.h"
 #include "animation_manager.h"
+#include "events/animation_over.h"
 
 namespace polosformer
 {
@@ -28,6 +29,8 @@ namespace polosformer
 
         void OnKeyPress(polos::key_press& p_Event);
         void OnKeyRelease(polos::key_release& p_Event);
+        void OnMouseButtonPress(polos::mouse_button_press& p_Event);
+        void OnAnimationOver(polos::animation_over& p_Event);
 
         void LoadSprites();
     private:

@@ -5,10 +5,16 @@
 #include <polos/core/log.h>
 #include <polos/graphics/shader_lib.h>
 
+#include "events/animation_over.h"
+#include "events/scene_change.h"
+
 namespace polosformer
 {
     EntryPoint::EntryPoint()
     {
+        polos::animation_over{};
+        polos::scene_change{};
+
         polos::ShaderLib::Load("resources/shaders/texture.vert", "resources/shaders/texture.frag");
         m_Game = std::make_unique<Game>();
     }
