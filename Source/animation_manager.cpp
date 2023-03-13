@@ -44,13 +44,12 @@ namespace polosformer
         }
     }
 
-    void AnimationManager::ChangeAnimation(polos::ecs::Entity p_Entity, polos::base_animation* p_Anim)
+    void AnimationManager::ChangeAnimation(game_entity& p_Entity, polos::base_animation* p_Anim)
     {
-        auto* animator_comp = m_CurrentScene->Get<polos::ecs::animator_component>(p_Entity);
-        animator_comp->currentAnimation = p_Anim;
-        animator_comp->currentFrame = 0;
-        animator_comp->frameCounter = 0;
-        animator_comp->isStopped = false;
+        p_Entity.animatorComp->currentAnimation = p_Anim;
+        p_Entity.animatorComp->currentFrame = 0;
+        p_Entity.animatorComp->frameCounter = 0;
+        p_Entity.animatorComp->isStopped = false;
     }
     
     void AnimationManager::OnSceneChange(polos::scene_change& p_Event)

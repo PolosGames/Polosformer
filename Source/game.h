@@ -12,11 +12,22 @@
 #include "game_state.h"
 #include "animation_manager.h"
 #include "events/animation_over.h"
+#include "game_entity.h"
 
 namespace polosformer
 {
     class Game
     {
+    private:
+        enum Key : int32_t
+        {
+            k_W = 1,
+            k_S = 1 << 1,
+            k_A = 1 << 2,
+            k_D = 1 << 3,
+        };
+
+        static constexpr float k_CharacterSpeed{ 1.f };
     public:
         Game();
         ~Game();
@@ -26,6 +37,7 @@ namespace polosformer
         static game_state& GetCurrentGameState();
     private:
         void UpdateCamera(float p_DeltaTime);
+        void UpdateCharacter(float p_DeltaTime);
 
         void OnKeyPress(polos::key_press& p_Event);
         void OnKeyRelease(polos::key_release& p_Event);
@@ -33,13 +45,16 @@ namespace polosformer
         void OnAnimationOver(polos::animation_over& p_Event);
 
         void LoadSprites();
+
+        void UpdateAnimationFrame(game_entity& p_Entity);
     private:
-        static game_state m_GameState;
+        static game_state s_GameState;
 
         AnimationManager m_AnimManager;
 
         std::unique_ptr<polos::base_animation> m_CharacterAnimIdle_1;
         std::unique_ptr<polos::base_animation> m_CharacterAnimIdle_2;
+        std::unique_ptr<polos::base_animation> m_CharacterAnimRun;
         std::unique_ptr<polos::base_animation> m_CharacterAnimAttack_1;
         std::unique_ptr<polos::base_animation> m_CharacterAnimAttack_2;
         std::unique_ptr<polos::base_animation> m_CharacterAnimAttack_3;
@@ -50,7 +65,7 @@ namespace polosformer
         polos::Camera  m_SceneCamera;
         int32_t        m_Key{};
 
-        polos::ecs::Entity m_Character{INVALID_ENTITY};
+        game_entity m_Character;
 
     };
 } // namespace polosformer
