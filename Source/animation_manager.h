@@ -4,7 +4,6 @@
 #include <polos/graphics/animation.h>
 
 #include "events/scene_change.h"
-#include "game_entity.h"
 
 namespace polosformer
 {
@@ -15,7 +14,7 @@ namespace polosformer
     public:
         void Update(float p_DeltaTime);
 
-        void ChangeAnimation(game_entity& p_Entity, polos::base_animation* p_Anim);
+        void ChangeAnimation(polos::ecs::Entity p_Entity, polos::base_animation* p_Anim);
     private:
         void OnSceneChange(polos::scene_change& p_Event);
     private:

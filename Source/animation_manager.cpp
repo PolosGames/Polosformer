@@ -8,6 +8,7 @@
 #include "events/animation_over.h"
 
 #include "game.h"
+#include "sets/animation_set.h"
 
 namespace polosformer
 {
@@ -19,11 +20,9 @@ namespace polosformer
     
     void AnimationManager::Update(float)
     {
-        auto scene_view = polos::SceneView<polos::ecs::animator_component>(*m_CurrentScene);
-        for (auto entity : scene_view)
+        for (auto animator_set : polos::SceneView<polos::ecs::animation_set>(*m_CurrentScene))
         {
-            auto* animator_comp = m_CurrentScene->Get<polos::ecs::animator_component>(entity);
-
+            auto& animator_comp = animator_set.animatorComponent;
             if (animator_comp->isStopped) continue;
             if (animator_comp->frameCounter == animator_comp->fps)
             {
@@ -34,7 +33,7 @@ namespace polosformer
                     if (!animator_comp->currentAnimation->loop)
                     {
                         animator_comp->currentFrame = 0;
-                        polos::EventBus::RaiseEvent<polos::animation_over>(animator_comp->currentAnimation, entity);
+                        polos::EventBus::RaiseEvent<polos::animation_over>(animator_comp->currentAnimation, animator_set.entity);
                         continue;
                     }
                     animator_comp->currentFrame = 0;
@@ -44,12 +43,13 @@ namespace polosformer
         }
     }
 
-    void AnimationManager::ChangeAnimation(game_entity& p_Entity, polos::base_animation* p_Anim)
+    void AnimationManager::ChangeAnimation(polos::ecs::Entity p_Entity, polos::base_animation* p_Anim)
     {
-        p_Entity.animatorComp->currentAnimation = p_Anim;
-        p_Entity.animatorComp->currentFrame = 0;
-        p_Entity.animatorComp->frameCounter = 0;
-        p_Entity.animatorComp->isStopped = false;
+        auto* animator_comp = m_CurrentScene->Get<polos::ecs::animator_component>(p_Entity);
+        animator_comp->currentAnimation = p_Anim;
+        animator_comp->currentFrame = 0;
+        animator_comp->frameCounter = 0;
+        animator_comp->isStopped = false;
     }
     
     void AnimationManager::OnSceneChange(polos::scene_change& p_Event)

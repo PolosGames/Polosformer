@@ -23,6 +23,12 @@ target_link_libraries(
             glfw::glfw_interface
 )
 
+target_include_directories(
+    Polosformer
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 target_compile_features(
     Polosformer
         PRIVATE

@@ -12,7 +12,6 @@
 #include "game_state.h"
 #include "animation_manager.h"
 #include "events/animation_over.h"
-#include "game_entity.h"
 
 namespace polosformer
 {
@@ -37,6 +36,7 @@ namespace polosformer
         static game_state& GetCurrentGameState();
     private:
         void UpdateCamera(float p_DeltaTime);
+        void UpdateEntities(float p_DeltaTime);
         void UpdateCharacter(float p_DeltaTime);
 
         void OnKeyPress(polos::key_press& p_Event);
@@ -46,7 +46,7 @@ namespace polosformer
 
         void LoadSprites();
 
-        void UpdateAnimationFrame(game_entity& p_Entity);
+        void UpdateAnimationFrame(polos::ecs::Entity p_Entity);
     private:
         static game_state s_GameState;
 
@@ -61,11 +61,11 @@ namespace polosformer
 
         polos::Shader* m_TextureShader{};
 
-        polos::Scene   m_MainScene;
-        polos::Camera  m_SceneCamera;
-        int32_t        m_Key{};
+        std::vector<polos::Scene> m_Scenes;
+        std::size_t               m_CurrentScene{};
+        polos::Camera             m_SceneCamera;
+        int32_t                   m_Key{};
 
-        game_entity m_Character;
-
+        polos::ecs::Entity m_Character;
     };
 } // namespace polosformer

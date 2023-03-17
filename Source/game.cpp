@@ -16,6 +16,8 @@
 
 #include "anim_type.h"
 #include "events/scene_change.h"
+#include "entity_direction.h"
+#include "sets/character_set.h"
 
 namespace polosformer
 {
@@ -30,14 +32,16 @@ namespace polosformer
         SUB_TO_EVENT_MEM_FUN(polos::mouse_button_press, OnMouseButtonPress);
         SUB_TO_EVENT_MEM_FUN(polos::animation_over, OnAnimationOver);
 
-
         LoadSprites();
 
-        s_GameState.currentScene = &m_MainScene;
+        m_Scenes.emplace_back();
+        m_CurrentScene = 0;
+
+        s_GameState.currentScene = &m_Scenes[m_CurrentScene];
         s_GameState.playState    = PlayState::k_LevelStart;
         polos::EventBus::RaiseEvent<polos::scene_change>(s_GameState.currentScene);
 
-        m_Character.id = m_MainScene.NewEntity();
+        m_Character = m_Scenes[m_CurrentScene].NewEntity();
 
         constexpr float anim_sprite_width{50.0f};
         constexpr float anim_sprite_height{37.0f};
@@ -47,24 +51,22 @@ namespace polosformer
 
         namespace ecs = polos::ecs;
 
-        m_Character.infoComp = m_MainScene.Assign<ecs::info_component>(m_Character.id);
-        m_Character.infoComp->name = "Character";
-        m_Character.infoComp->isVisible = true;
+        auto* info_comp = m_Scenes[m_CurrentScene].Assign<ecs::info_component>(m_Character);
+        info_comp->name = "Character";
+        info_comp->isVisible = true;
 
-        m_Character.transformComp = m_MainScene.Assign<ecs::transform_component>(m_Character.id);
-        m_Character.transformComp->scale = glm::vec3(character_scale_ratio * character_scale, character_scale, 1.0f);
-        
-        m_Character.texture2dComp = m_MainScene.Assign<ecs::texture2d_component>(m_Character.id);
-        m_Character.texture2dComp->texture = m_CharacterAnimIdle_1->frames[0];
+        auto* transform_comp = m_Scenes[m_CurrentScene].Assign<ecs::transform_component>(m_Character);
+        transform_comp->scale = glm::vec3(character_scale_ratio * character_scale, character_scale, 1.0f);
 
-        m_Character.materialComp = m_MainScene.Assign<ecs::material_component>(m_Character.id);
-        m_Character.materialComp->shader = &polos::ShaderLib::Get("texture"_sid);
-        
-        m_Character.animatorComp = m_MainScene.Assign<ecs::animator_component>(m_Character.id);
-        m_Character.animatorComp->fps = 20;
-        m_Character.animatorComp->currentAnimation = m_CharacterAnimIdle_1.get();
+        auto* texture2d_comp = m_Scenes[m_CurrentScene].Assign<ecs::texture2d_component>(m_Character);
+        texture2d_comp->texture = m_CharacterAnimIdle_1->frames[0];
 
-        m_Character.direction = EntityDirection::k_Right;
+        auto* material_comp = m_Scenes[m_CurrentScene].Assign<ecs::material_component>(m_Character);
+        material_comp->shader = &polos::ShaderLib::Get("texture"_sid);
+
+        auto* animator_comp = m_Scenes[m_CurrentScene].Assign<ecs::animator_component>(m_Character);
+        animator_comp->fps = 20;
+        animator_comp->currentAnimation = m_CharacterAnimIdle_1.get();
     }
 
     Game::~Game()
@@ -74,14 +76,10 @@ namespace polosformer
     {
         UpdateCamera(p_DeltaTime);
         UpdateCharacter(p_DeltaTime);
-
-        auto scene_view = polos::SceneView<polos::ecs::animator_component, polos::ecs::texture2d_component>(m_MainScene);
-
-        //auto* info_comp = m_MainScene.Get<polos::ecs::info_component>(entity);
-
+        UpdateEntities(p_DeltaTime);
         UpdateAnimationFrame(m_Character);
 
-        polos::Renderer::RenderScene(m_MainScene);
+        polos::Renderer::RenderScene(m_Scenes[m_CurrentScene]);
     }
 
     game_state& Game::GetCurrentGameState()
@@ -94,26 +92,37 @@ namespace polosformer
         
     }
 
-    void Game::UpdateCharacter(float p_DeltaTime)
+    void Game::UpdateEntities(float const)
     {
-        float move_scalar{ 0.0f };
-        int32_t direction{ m_Character.direction };
+        for (auto [transform_comp] : polos::SceneView<polos::ecs::transform_component>(m_Scenes[m_CurrentScene]))
+        {
 
-        int32_t x_axis_pressed_key = (m_Key & Key::k_D) | (m_Key & Key::k_A);
-        if (x_axis_pressed_key == Key::k_D)
-        {
-            move_scalar = 1.0f;
-            direction = EntityDirection::k_Right;
         }
-        else if (x_axis_pressed_key == Key::k_A)
+    }
+
+    void Game::UpdateCharacter(float const p_DeltaTime)
+    {
+        float x_move_scalar{ 1.0f };
+
+        for (auto character_set : polos::SceneView<polos::ecs::character_set>(m_Scenes[m_CurrentScene]))
         {
-            move_scalar = -1.0f;
-            direction = EntityDirection::k_Left;
-        }
-        m_Character.transformComp->position += glm::vec3(k_CharacterSpeed * p_DeltaTime * move_scalar, 0.0f, 0.0f);
-        float x_scale = glm::abs(m_Character.transformComp->scale.x) * direction;
-        m_Character.transformComp->scale.x = x_scale;
-        m_Character.direction = static_cast<EntityDirection>(direction);
+            int32_t x_axis_pressed_key = (m_Key & Key::k_D) | (m_Key & Key::k_A);
+            int32_t should_move = 0;
+            if (x_axis_pressed_key == Key::k_D)
+            {
+                x_move_scalar = 1.0f;
+                should_move = 1;
+            }
+            else if (x_axis_pressed_key == Key::k_A)
+            {
+                x_move_scalar = -1.0f;
+                should_move = 1;
+            }
+
+            character_set.transformComponent->position += glm::vec3(k_CharacterSpeed * p_DeltaTime * x_move_scalar * should_move, 0.0f, 0.0f);
+            float x_scale = glm::abs(character_set.transformComponent->scale.x) * static_cast<int32_t>(x_move_scalar);
+            character_set.transformComponent->scale.x = x_scale;
+        } 
     }
     
     void Game::OnKeyPress(polos::key_press& p_Event)
@@ -172,7 +181,7 @@ namespace polosformer
 
     void Game::OnAnimationOver(polos::animation_over& p_Event)
     {
-        if (p_Event.entity == m_Character.id)
+        if (p_Event.entity == m_Character)
         {
             if (p_Event.anim->id == static_cast<int64_t>(AnimationType::k_Attack_1))
             {
@@ -241,11 +250,13 @@ namespace polosformer
         }
     }
     
-    void Game::UpdateAnimationFrame(game_entity& p_Entity)
+    void Game::UpdateAnimationFrame(polos::ecs::Entity p_Entity)
     {
-        if (p_Entity.animatorComp != nullptr && p_Entity.texture2dComp != nullptr)
+        auto* animator_comp = m_Scenes[m_CurrentScene].Get<polos::ecs::animator_component>(p_Entity);
+        auto* texture2d_comp = m_Scenes[m_CurrentScene].Get<polos::ecs::texture2d_component>(p_Entity);
+        if (animator_comp != nullptr && texture2d_comp != nullptr)
         {
-            p_Entity.texture2dComp->texture = p_Entity.animatorComp->currentAnimation->frames[p_Entity.animatorComp->currentFrame];
+            texture2d_comp->texture = animator_comp->currentAnimation->frames[animator_comp->currentFrame];
         }
     }
 } // namespace polosformer
